@@ -16,59 +16,62 @@ export const SeatLayout = ({
   const rows = Math.ceil(TOTAL_SEATS / SEATS_PER_ROW);
 
   return (
-    <div className="mx-auto w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="mb-5 flex items-center justify-between rounded-xl bg-slate-900 px-4 py-2.5 text-white">
-        <span className="text-xs font-semibold uppercase tracking-wider">
-          Front
-        </span>
-        <span className="text-xs text-slate-300">Driver</span>
+    <div className="w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="overflow-x-auto pb-2">
+        <div className="inline-flex min-w-full items-start gap-3">
+          <div className="flex h-[138px] min-w-16 items-center justify-center rounded-lg bg-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            Driver
+          </div>
+
+          {Array.from({ length: rows }, (_, rowIndex) => {
+            const start = rowIndex * SEATS_PER_ROW + 1;
+            const seats = Array.from(
+              { length: SEATS_PER_ROW },
+              (_, i) => start + i
+            ).filter((n) => n <= TOTAL_SEATS);
+
+            return (
+              <div
+                key={rowIndex}
+                className="grid grid-rows-[1fr_1fr_auto_1fr_1fr] items-center gap-2"
+              >
+                {seats.slice(0, 2).map((seat) => (
+                  <Seat
+                    key={seat}
+                    seatNumber={seat}
+                    status={
+                      bookedSeats.has(seat)
+                        ? "booked"
+                        : selectedSeat === seat
+                        ? "selected"
+                        : "available"
+                    }
+                    onClick={onSelectSeat}
+                  />
+                ))}
+                <div className="h-4" aria-hidden />
+                {seats.slice(2, 4).map((seat) => (
+                  <Seat
+                    key={seat}
+                    seatNumber={seat}
+                    status={
+                      bookedSeats.has(seat)
+                        ? "booked"
+                        : selectedSeat === seat
+                        ? "selected"
+                        : "available"
+                    }
+                    onClick={onSelectSeat}
+                  />
+                ))}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {Array.from({ length: rows }, (_, rowIndex) => {
-          const start = rowIndex * SEATS_PER_ROW + 1;
-          const seats = Array.from(
-            { length: SEATS_PER_ROW },
-            (_, i) => start + i
-          ).filter((n) => n <= TOTAL_SEATS);
-
-          return (
-            <div
-              key={rowIndex}
-              className="grid grid-cols-[1fr_1fr_auto_1fr_1fr] items-center gap-2"
-            >
-              {seats.slice(0, 2).map((seat) => (
-                <Seat
-                  key={seat}
-                  seatNumber={seat}
-                  status={
-                    bookedSeats.has(seat)
-                      ? "booked"
-                      : selectedSeat === seat
-                      ? "selected"
-                      : "available"
-                  }
-                  onClick={onSelectSeat}
-                />
-              ))}
-              <div className="w-4" aria-hidden />
-              {seats.slice(2, 4).map((seat) => (
-                <Seat
-                  key={seat}
-                  seatNumber={seat}
-                  status={
-                    bookedSeats.has(seat)
-                      ? "booked"
-                      : selectedSeat === seat
-                      ? "selected"
-                      : "available"
-                  }
-                  onClick={onSelectSeat}
-                />
-              ))}
-            </div>
-          );
-        })}
+      <div className="mt-3 text-xs text-slate-500">
+        Scroll horizontally on smaller screens.
       </div>
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-4 border-t border-slate-100 pt-4 text-xs text-slate-600">
@@ -79,7 +82,6 @@ export const SeatLayout = ({
     </div>
   );
 };
-
 const LegendItem = ({ color, label }: { color: string; label: string }) => (
   <span className="flex items-center gap-1.5">
     <span className={`h-4 w-4 rounded border ${color}`} />
