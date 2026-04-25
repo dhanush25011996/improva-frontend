@@ -1,73 +1,79 @@
-# React + TypeScript + Vite
+# Improva Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript frontend for the bus seat reservation assignment.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19
+- TypeScript
+- Vite
+- React Router
+- Tailwind CSS
 
-## React Compiler
+## Prerequisites
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js 18+ (recommended Node 20+)
+- npm
 
-## Expanding the ESLint configuration
+## Environment
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Create `.env` in `improva-frontend`:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_API_BASE_URL=http://localhost:3000/api/v1
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+`VITE_API_BASE_URL` is used only when backend integration is enabled.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Backend Integration Toggle
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+This project supports two data modes:
+
+- `localStorage` mode (default, PDF-friendly browser-only behavior)
+- backend API mode
+
+Control it in `src/features/booking/constants.ts`:
+
+```ts
+export const IS_BACKEND_INTEGRATED = false;
 ```
+
+- `false` -> all reservation data is stored in browser localStorage
+- `true` -> all reservation operations call backend APIs
+
+## Install and Run
+
+From `improva-frontend`:
+
+```bash
+npm install
+npm run dev
+```
+
+Vite is configured for port `3001`, but may move to next free port if occupied.
+
+## Build
+
+```bash
+npm run build
+npm run preview
+```
+
+## Features Implemented
+
+- Seat reservation view (landscape seat layout)
+- Dashboard view
+- Add reservation
+- Edit passenger details
+- Delete reservation (cancel seat)
+- Browser storage mode and backend mode
+
+## API Endpoints Used (backend mode)
+
+When `IS_BACKEND_INTEGRATED = true`, frontend uses:
+
+- `GET /api/v1/booking/closed`
+- `POST /api/v1/booking/:seatNumber/book`
+- `PATCH /api/v1/booking/:seatNumber/passenger`
+- `POST /api/v1/booking/:seatNumber/cancel`
+- `POST /api/v1/booking/admin/reset`
