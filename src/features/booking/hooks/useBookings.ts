@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "@/lib/api-client";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import {
+  BOOKINGS_STORAGE_KEY,
+  IS_BACKEND_INTEGRATED,
+} from "../constants";
 import { bookingsApi } from "../services/bookings.api";
 import type { Booking, BookingInput, BookingUpdate } from "../types";
 
@@ -16,14 +21,23 @@ const toErrorMessage = (err: unknown): string => {
 };
 
 export const useBookings = () => {
+  const [localBookings, setLocalBookings] = useLocalStorage<Booking[]>(
+    BOOKINGS_STORAGE_KEY,
+    []
+  );
   const [state, setState] = useState<UseBookingsState>({
     bookings: [],
-    loading: true,
+    loading: IS_BACKEND_INTEGRATED,
     error: null,
   });
   const abortRef = useRef<AbortController | null>(null);
 
   const refetch = useCallback(async () => {
+    if (!IS_BACKEND_INTEGRATED) {
+      setState({ bookings: localBookings, loading: false, error: null });
+      return;
+    }
+
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -40,11 +54,15 @@ export const useBookings = () => {
         error: toErrorMessage(err),
       }));
     }
-  }, []);
+  }, [localBookings]);
 
   useEffect(() => {
     refetch();
-    return () => abortRef.current?.abort();
+    return () => {
+      if (IS_BACKEND_INTEGRATED) {
+        abortRef.current?.abort();
+      }
+    };
   }, [refetch]);
 
   const bookedSeats = useMemo(
@@ -65,15 +83,45 @@ export const useBookings = () => {
 
   const createBooking = useCallback(
     async (seatNumber: number, input: BookingInput): Promise<Booking> => {
+      if (!IS_BACKEND_INTEGRATED) {
+        const booking: Booking = {
+          seat_number: seatNumber,
+          first_name: input.first_name,
+          last_name: input.last_name,
+          email: input.email,
+          phone: input.phone ?? null,
+          booked_at: new Date().toISOString(),
+        };
+        setLocalBookings((prev) => [...prev, booking]);
+        return booking;
+      }
+
       const booking = await bookingsApi.book(seatNumber, input);
       setState((prev) => ({ ...prev, bookings: [...prev.bookings, booking] }));
       return booking;
     },
-    []
+    [setLocalBookings]
   );
 
   const updateBooking = useCallback(
     async (seatNumber: number, update: BookingUpdate): Promise<void> => {
+      if (!IS_BACKEND_INTEGRATED) {
+        setLocalBookings((prev) =>
+          prev.map((b) =>
+            b.seat_number === seatNumber
+              ? {
+                  ...b,
+                  first_name: update.first_name,
+                  last_name: update.last_name,
+                  email: update.email,
+                  phone: update.phone ?? null,
+                }
+              : b
+          )
+        );
+        return;
+      }
+
       const updated = await bookingsApi.updatePassenger(seatNumber, update);
       setState((prev) => ({
         ...prev,
@@ -82,24 +130,36 @@ export const useBookings = () => {
         ),
       }));
     },
-    []
+    [setLocalBookings]
   );
 
   const deleteBooking = useCallback(
     async (seatNumber: number): Promise<void> => {
+      if (!IS_BACKEND_INTEGRATED) {
+        setLocalBookings((prev) =>
+          prev.filter((b) => b.seat_number !== seatNumber)
+        );
+        return;
+      }
+
       await bookingsApi.cancel(seatNumber);
       setState((prev) => ({
         ...prev,
         bookings: prev.bookings.filter((b) => b.seat_number !== seatNumber),
       }));
     },
-    []
+    [setLocalBookings]
   );
 
   const resetAll = useCallback(async (): Promise<void> => {
+    if (!IS_BACKEND_INTEGRATED) {
+      setLocalBookings([]);
+      return;
+    }
+
     await bookingsApi.resetAll();
     setState((prev) => ({ ...prev, bookings: [] }));
-  }, []);
+  }, [setLocalBookings]);
 
   return {
     bookings: state.bookings,
