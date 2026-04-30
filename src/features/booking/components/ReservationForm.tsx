@@ -13,6 +13,7 @@ interface FormErrors {
   first_name?: string;
   last_name?: string;
   email?: string;
+  phone?: string;
 }
 
 const validate = (values: BookingInput): FormErrors => {
