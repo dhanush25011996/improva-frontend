@@ -3,8 +3,8 @@ import { ApiError } from "@/lib/api-client";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import {
   BOOKINGS_STORAGE_KEY,
-  IS_BACKEND_INTEGRATED,
 } from "../constants";
+import { useBookingDataSource } from "../context/BookingDataSourceContext";
 import { bookingsApi } from "../services/bookings.api";
 import type { Booking, BookingInput, BookingUpdate } from "../types";
 
@@ -21,19 +21,20 @@ const toErrorMessage = (err: unknown): string => {
 };
 
 export const useBookings = () => {
+  const { isBackendMode } = useBookingDataSource();
   const [localBookings, setLocalBookings] = useLocalStorage<Booking[]>(
     BOOKINGS_STORAGE_KEY,
     []
   );
   const [state, setState] = useState<UseBookingsState>({
     bookings: [],
-    loading: IS_BACKEND_INTEGRATED,
+    loading: isBackendMode,
     error: null,
   });
   const abortRef = useRef<AbortController | null>(null);
 
   const refetch = useCallback(async () => {
-    if (!IS_BACKEND_INTEGRATED) {
+    if (!isBackendMode) {
       setState({ bookings: localBookings, loading: false, error: null });
       return;
     }
@@ -54,16 +55,16 @@ export const useBookings = () => {
         error: toErrorMessage(err),
       }));
     }
-  }, [localBookings]);
+  }, [isBackendMode, localBookings]);
 
   useEffect(() => {
     refetch();
     return () => {
-      if (IS_BACKEND_INTEGRATED) {
+      if (isBackendMode) {
         abortRef.current?.abort();
       }
     };
-  }, [refetch]);
+  }, [isBackendMode, refetch]);
 
   const bookedSeats = useMemo(
     () => new Set(state.bookings.map((b) => b.seat_number)),
@@ -83,7 +84,7 @@ export const useBookings = () => {
 
   const createBooking = useCallback(
     async (seatNumber: number, input: BookingInput): Promise<Booking> => {
-      if (!IS_BACKEND_INTEGRATED) {
+      if (!isBackendMode) {
         const booking: Booking = {
           seat_number: seatNumber,
           first_name: input.first_name,
@@ -100,12 +101,12 @@ export const useBookings = () => {
       setState((prev) => ({ ...prev, bookings: [...prev.bookings, booking] }));
       return booking;
     },
-    [setLocalBookings]
+    [isBackendMode, setLocalBookings]
   );
 
   const updateBooking = useCallback(
     async (seatNumber: number, update: BookingUpdate): Promise<void> => {
-      if (!IS_BACKEND_INTEGRATED) {
+      if (!isBackendMode) {
         setLocalBookings((prev) =>
           prev.map((b) =>
             b.seat_number === seatNumber
@@ -130,12 +131,12 @@ export const useBookings = () => {
         ),
       }));
     },
-    [setLocalBookings]
+    [isBackendMode, setLocalBookings]
   );
 
   const deleteBooking = useCallback(
     async (seatNumber: number): Promise<void> => {
-      if (!IS_BACKEND_INTEGRATED) {
+      if (!isBackendMode) {
         setLocalBookings((prev) =>
           prev.filter((b) => b.seat_number !== seatNumber)
         );
@@ -148,18 +149,18 @@ export const useBookings = () => {
         bookings: prev.bookings.filter((b) => b.seat_number !== seatNumber),
       }));
     },
-    [setLocalBookings]
+    [isBackendMode, setLocalBookings]
   );
 
   const resetAll = useCallback(async (): Promise<void> => {
-    if (!IS_BACKEND_INTEGRATED) {
+    if (!isBackendMode) {
       setLocalBookings([]);
       return;
     }
 
     await bookingsApi.resetAll();
     setState((prev) => ({ ...prev, bookings: [] }));
-  }, [setLocalBookings]);
+  }, [isBackendMode, setLocalBookings]);
 
   return {
     bookings: state.bookings,
